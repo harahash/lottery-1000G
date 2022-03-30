@@ -12,7 +12,7 @@ contract Lottery {
     }
 
     function enter() public payable {
-        require(msg.value > .01 ether, "Must send more than 0.01 Ether");
+        require(msg.value > 0 ether, "0 Ether is not valid");
         players.push(payable(msg.sender));
 
         if (players.length == MAX_PLAYERS) {
@@ -29,18 +29,17 @@ contract Lottery {
             );
     }
 
-    function pickWinner() public restricted {
+    function pickWinner() public {
         uint256 index = random() % players.length;
         players[index].transfer(address(this).balance);
         players = new address payable[](0);
     }
 
-    modifier restricted() {
-        require(msg.sender == manager);
-        _;
-    }
-
     function getPlayers() public view returns (address payable[] memory) {
         return players;
+    }
+
+    function getBalance() public view returns (uint256) {
+        return address(this).balance;
     }
 }

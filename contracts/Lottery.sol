@@ -1,25 +1,50 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./LotteryTicket.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
 
-contract Lottery {
-    LotteryTicket public ticket;
-    uint256 public id;
-    address public manager;
+contract Lottery is ERC721, Ownable {
+    using Counters for Counters.Counter;
+    Counters.Counter private _tokenIds;
+
+    address payable public manager;
     address payable[] public players;
     uint8 public constant MAX_PLAYERS = 10;
 
-    constructor() {
-        manager = msg.sender;
+    uint256 public _startTime;
+    uint256 public _endTime;
+
+    constructor() ERC721("Lottery", "LTR") {
+        manager = payable(msg.sender);
+    }
+
+    modifier timeOver{
+        require(block.timestamp <= _endTime);
+        _;
+    }
+
+    function startLottery() public {
+        _startTime = block.timestamp;
+    }
+
+    function endLottery() public {
+        _endTime = _startTime + 10 minutes;
+    }
+
+    function getTimeLeft() public view returns (uint256) {
+        return _endTime - block.timestamp;
     }
 
     function enter() public payable {
         require(msg.value > 0 ether, "0 Ether is not valid");
         players.push(payable(msg.sender));
-        ticket.safeMint(msg.sender, id);
-        id++;
-        
+
+        uint256 newItemId = _tokenIds.current();
+        _mint(msg.sender, newItemId);
+        _tokenIds.increment();
+
         if (players.length == MAX_PLAYERS) {
             pickWinner();
         }
@@ -36,7 +61,11 @@ contract Lottery {
 
     function pickWinner() public {
         uint256 index = random() % players.length;
+        
+        uint256 ownerFee = address(this).balance * 9 / 10;
+        manager.transfer(ownerFee);
         players[index].transfer(address(this).balance);
+
         players = new address payable[](0);
     }
 

@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.0;
 
+import "./LotteryTicket.sol";
+
 contract Lottery {
+    LotteryTicket public ticket;
+    uint256 public id;
     address public manager;
     address payable[] public players;
     uint8 public constant MAX_PLAYERS = 10;
@@ -14,7 +17,9 @@ contract Lottery {
     function enter() public payable {
         require(msg.value > 0 ether, "0 Ether is not valid");
         players.push(payable(msg.sender));
-
+        ticket.safeMint(msg.sender, id);
+        id++;
+        
         if (players.length == MAX_PLAYERS) {
             pickWinner();
         }

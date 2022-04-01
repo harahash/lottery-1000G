@@ -20,11 +20,6 @@ contract Lottery is ERC721, Ownable {
         manager = payable(msg.sender);
     }
 
-    modifier timeOver{
-        require(block.timestamp <= _endTime);
-        _;
-    }
-
     function startLottery() public {
         _startTime = block.timestamp;
     }
@@ -38,6 +33,11 @@ contract Lottery is ERC721, Ownable {
     }
 
     function enter() public payable {
+        require(block.timestamp <= _endTime);
+        if (players.length == 0) {
+            startLottery();
+        }
+
         require(msg.value > 0 ether, "0 Ether is not valid");
         players.push(payable(msg.sender));
 
@@ -61,8 +61,8 @@ contract Lottery is ERC721, Ownable {
 
     function pickWinner() public {
         uint256 index = random() % players.length;
-        
-        uint256 ownerFee = address(this).balance * 9 / 10;
+
+        uint256 ownerFee = (address(this).balance * 9) / 10;
         manager.transfer(ownerFee);
         players[index].transfer(address(this).balance);
 
